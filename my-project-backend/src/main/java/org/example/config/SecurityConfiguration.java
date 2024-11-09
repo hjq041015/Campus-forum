@@ -6,8 +6,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.example.Util.JwtUtils;
 import org.example.entity.RestBean;
+import org.example.entity.dto.Account;
 import org.example.entity.vo.response.AuthorizeVO;
 import org.example.filter.JwtAuthorizeFilter;
+import org.example.server.AccountServer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.AccessDeniedException;
@@ -18,7 +20,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
@@ -31,6 +32,9 @@ public class SecurityConfiguration {
 
     @Resource
     JwtAuthorizeFilter jwtAuthorizeFilter;
+
+    @Resource
+    AccountServer server;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -68,12 +72,13 @@ public class SecurityConfiguration {
         response.setContentType("application/json");
         request.setCharacterEncoding("utf-8");
         User user =(User) authentication.getPrincipal(); // 获取经过验证的user对象
-        String token = utils.createJwt(user, 1, "Tom");    // 为user对象创建JWT
-        AuthorizeVO vo = new AuthorizeVO();  // 创建一个响应对象(响应给前端),用于保存授权信息
-        vo.setExpire(utils.expiresTime()); // 设置过期时间
-        vo.setRole("");                     // 设置用户角色
-        vo.setToken(token);                 // 添加JWt令牌
-        vo.setUsername("Tom");              // 设置用户名
+        Account account = server.findAccountByUsernameOrEmail(user.getUsername());
+        String token = utils.createJwt(user, 1, "Tom");// 为user对象创建JWT
+         // 创建一个响应对象(响应给前端),用于保存授权信息
+        AuthorizeVO vo = account.asViewObject(AuthorizeVO.class, v-> {
+            v.setToken(token);
+            v.setExpire(utils.expiresTime());
+        });
         response.getWriter().write(RestBean.success(vo).asJsonString());  // 将响应内容设为JSON格式表示响应成功
     }
 
