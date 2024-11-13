@@ -1,4 +1,13 @@
 spring:
+  mail:
+    host: smtp.163.com
+    username: huangjiaqi041015@163.com
+    password: GYeBE35YecRJHyj5
+  rabbitmq:
+    addresses: 192.168.116.131
+    username: root
+    password: 123456
+    virtual-host: /test
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
