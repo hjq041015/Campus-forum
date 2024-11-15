@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 @Configuration
+// 创建消息队列
 public class RabbitConfiguration {
     @Bean("queueEmail")
     public Queue queueEmail() {

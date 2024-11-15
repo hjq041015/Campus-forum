@@ -7,7 +7,7 @@ spring:
     addresses: 192.168.116.131
     username: root
     password: 123456
-    virtual-host: /test
+    virtual-host: /
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
