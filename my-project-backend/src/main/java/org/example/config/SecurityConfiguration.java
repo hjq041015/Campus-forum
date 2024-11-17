@@ -73,7 +73,7 @@ public class SecurityConfiguration {
         request.setCharacterEncoding("utf-8");
         User user =(User) authentication.getPrincipal(); // 获取经过验证的user对象
         Account account = server.findAccountByUsernameOrEmail(user.getUsername());
-        String token = utils.createJwt(user, 1, "Tom");// 为user对象创建JWT
+        String token = utils.createJwt(user, account.getId(), account.getUsername());// 为user对象创建JWT
          // 创建一个响应对象(响应给前端),用于保存授权信息
         AuthorizeVO vo = account.asViewObject(AuthorizeVO.class, v-> {
             v.setToken(token);

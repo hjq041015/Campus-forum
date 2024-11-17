@@ -7,7 +7,9 @@ import jakarta.annotation.Resource;
 import org.example.Util.Const;
 import org.example.Util.FlowUtil;
 import org.example.entity.dto.Account;
+import org.example.entity.vo.request.ConfirmResetVO;
 import org.example.entity.vo.request.EmailRegistVO;
+import org.example.entity.vo.request.EmailResetVO;
 import org.example.mappers.AccountMapper;
 import org.example.server.AccountServer;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -63,6 +65,11 @@ public class AccountServerImpl extends ServiceImpl<AccountMapper, Account> imple
     }
 
     @Override
+    public Account findAccountById(String id) {
+        return this.query().eq("id",id).one();
+    }
+
+    @Override
     public String registEmailVerifyCode(String type, String email, String ip) {
         synchronized (ip.intern()) {
             if (!this.verifyLimit(ip)) {
@@ -71,7 +78,7 @@ public class AccountServerImpl extends ServiceImpl<AccountMapper, Account> imple
         int code = random.nextInt(899999) + 100000;
         Map<String, Object> data = Map.of("type",type ,"email",email ,"code",code);
         Rabbittemplate.convertAndSend("mail",data);
-        stringRedisTemplate.opsForValue().set(Const.VERIFY_EMAIL_DATA,String.valueOf(code),3, TimeUnit.MINUTES);
+        stringRedisTemplate.opsForValue().set(Const.VERIFY_EMAIL_DATA+email,String.valueOf(code),3, TimeUnit.MINUTES);
         return null;
         }
 
@@ -80,7 +87,7 @@ public class AccountServerImpl extends ServiceImpl<AccountMapper, Account> imple
     @Override
     public String registEmailAccount(EmailRegistVO emailRegistVO) {
         String email = emailRegistVO.getEmail();
-        String code = stringRedisTemplate.opsForValue().get(Const.VERIFY_EMAIL_DATA);
+        String code = this.getVerifyEmailCode(email);
         String username = emailRegistVO.getUsername();
         String password = encoder.encode(emailRegistVO.getPassword());
         if(code == null) return "请先获取验证码";
@@ -89,12 +96,46 @@ public class AccountServerImpl extends ServiceImpl<AccountMapper, Account> imple
         if (this.existsAccountByUsername(username)) return "此用户名已被其他人注册";
         Account account = new Account(null,username,password,email,"user",new Date());
         if (this.save(account)) {
-            stringRedisTemplate.delete(Const.VERIFY_EMAIL_DATA);
+          this.deleteVerifyEmailCode(email);
             return null;
         }else {
             return "内部错误,请联系管理员";
         }
 
+    }
+
+    private void deleteVerifyEmailCode(String email) {
+        String key = Const.VERIFY_EMAIL_DATA+email;
+        stringRedisTemplate.delete(key);
+    }
+
+     private String getVerifyEmailCode(String email) {
+        String key = Const.VERIFY_EMAIL_DATA+email;
+        return stringRedisTemplate.opsForValue().get(key);
+    }
+
+
+
+    @Override
+    public String resetConfirm(ConfirmResetVO confirmResetVO) {
+        String email = confirmResetVO.getEmail();
+        String code = this.getVerifyEmailCode(email);
+        if(code == null) return "请先获取验证码";
+        if(!code.equals(confirmResetVO.getCode())) return "验证码输入错误";
+        return null;
+    }
+
+    @Override
+    public String resetEmailAccountPassword(EmailResetVO emailResetVO) {
+        String verify = this.resetConfirm(new ConfirmResetVO(emailResetVO.getEmail(), emailResetVO.getCode()));
+        if(verify != null) return verify;
+        String email = emailResetVO.getEmail();
+        String password = encoder.encode(emailResetVO.getPassword());
+        boolean update = this.update().eq("email",email).set("password",password).update();
+        if (update) {
+            this.deleteVerifyEmailCode(email);
+        }
+        return update ? null : "更新失败请联系管理员";
     }
 
     // 验证这个ip是否已经发起过请求
