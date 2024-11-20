@@ -9,7 +9,7 @@ import org.example.entity.RestBean;
 import org.example.entity.dto.Account;
 import org.example.entity.vo.response.AuthorizeVO;
 import org.example.filter.JwtAuthorizeFilter;
-import org.example.server.AccountServer;
+import org.example.service.AccountServer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.AccessDeniedException;

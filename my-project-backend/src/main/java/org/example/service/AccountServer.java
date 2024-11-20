@@ -1,8 +1,9 @@
-package org.example.server;
+package org.example.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.example.entity.dto.Account;
 import org.example.entity.vo.request.ConfirmResetVO;
+import org.example.entity.vo.request.EmailModifyVO;
 import org.example.entity.vo.request.EmailRegistVO;
 import org.example.entity.vo.request.EmailResetVO;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -16,4 +17,5 @@ public interface AccountServer extends IService<Account> , UserDetailsService {
     String registEmailAccount(EmailRegistVO emailRegistVO);
     String resetConfirm(ConfirmResetVO confirmResetVO);
     String resetEmailAccountPassword(EmailResetVO emailResetVO);
+    String modifyEmail(EmailModifyVO vo,int id);
 }

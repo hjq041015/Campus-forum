@@ -1,6 +1,5 @@
-package org.example.server.serverImpl;
+package org.example.service.serviceImpl;
 
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
@@ -8,10 +7,11 @@ import org.example.Util.Const;
 import org.example.Util.FlowUtil;
 import org.example.entity.dto.Account;
 import org.example.entity.vo.request.ConfirmResetVO;
+import org.example.entity.vo.request.EmailModifyVO;
 import org.example.entity.vo.request.EmailRegistVO;
 import org.example.entity.vo.request.EmailResetVO;
 import org.example.mappers.AccountMapper;
-import org.example.server.AccountServer;
+import org.example.service.AccountServer;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.userdetails.User;
@@ -136,6 +136,17 @@ public class AccountServerImpl extends ServiceImpl<AccountMapper, Account> imple
             this.deleteVerifyEmailCode(email);
         }
         return update ? null : "更新失败请联系管理员";
+    }
+
+    @Override
+    public String modifyEmail(EmailModifyVO vo,int id) {
+        String email = vo.getEmail();
+        if (this.getVerifyEmailCode(email) == null) return "请先获取验证码";
+        if (!this.getVerifyEmailCode(email).equals(vo.getCode())) return "验证码输入错误";
+        this.deleteVerifyEmailCode(email);
+        if(this.existsAccountByEmail(email)) return "此邮件已被他人注册";
+        this.update().eq("id",id).set("email",email).update();
+        return null;
     }
 
     // 验证这个ip是否已经发起过请求

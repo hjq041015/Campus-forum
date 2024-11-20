@@ -31,6 +31,9 @@ public class MailQueueListener {
                     "您的邮件验证码为:"+code+ "有效时间为三分钟,为了保障您的安全,请勿向他人谢露验证码信息",email);
 
             case "reset" -> createMessage("你的密码重置邮件","您好,您正在进行重置密码操作,验证码:"+code+"有效时间为三分钟,如非本人操作请忽略",email);
+
+            case "modify" -> createMessage("你的邮件重置邮件","您好,您正在进行重置密码操作,验证码:" + code+ "有效时间为三分钟,如非本人操作请忽略",email);
+
             default -> null;
 
         };

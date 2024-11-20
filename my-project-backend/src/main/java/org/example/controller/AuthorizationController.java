@@ -7,9 +7,10 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import org.example.entity.RestBean;
 import org.example.entity.vo.request.ConfirmResetVO;
+import org.example.entity.vo.request.EmailModifyVO;
 import org.example.entity.vo.request.EmailRegistVO;
 import org.example.entity.vo.request.EmailResetVO;
-import org.example.server.AccountServer;
+import org.example.service.AccountServer;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +26,7 @@ public class AuthorizationController {
 
     @RequestMapping("/ask-code")
     public RestBean<Void> askVerifyCode(@RequestParam @Email String email,
-                                        @RequestParam @Pattern(regexp = "(register|reset)") String type,
+                                        @RequestParam @Pattern(regexp = "(register|reset|modify)") String type,
                                         HttpServletRequest request) {
         return this.messageHander(() -> server.registEmailVerifyCode(type,email,request.getRemoteAddr()));
     }
@@ -45,6 +46,7 @@ public class AuthorizationController {
         return this.messageHander(() ->
                 server.resetEmailAccountPassword(vo));
     }
+
 
     private <T> RestBean<T> messageHander(Supplier<String> action) {
         String message = action.get();
