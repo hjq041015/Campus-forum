@@ -5,16 +5,20 @@ import jakarta.validation.Valid;
 import org.example.entity.RestBean;
 import org.example.entity.dto.Account;
 import org.example.entity.dto.AccountDetails;
+import org.example.entity.vo.request.ChangePasswordVO;
 import org.example.entity.vo.request.DetailSaveVO;
 import org.example.entity.vo.request.EmailModifyVO;
+import org.example.entity.vo.request.SavePrivacyVO;
 import org.example.entity.vo.response.AccountDetailsVO;
+import org.example.entity.vo.response.AccountPrivacyVO;
 import org.example.entity.vo.response.AccountVO;
 import org.example.service.AccountDetailsServer;
+import org.example.service.AccountPrivacyService;
 import org.example.service.AccountServer;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 @RestController
 @RequestMapping("/api/user")
@@ -24,6 +28,9 @@ public class AccountController {
 
     @Resource
     AccountDetailsServer detailsServer;
+
+    @Resource
+    AccountPrivacyService privacyService;
 
     @GetMapping("/info")
     RestBean<AccountVO> info(@RequestAttribute("id") String id){
@@ -49,8 +56,36 @@ public class AccountController {
     @PostMapping("/modify-email")
     public RestBean<Void> modifyEmail(@RequestBody @Valid EmailModifyVO vo,
                                       @RequestAttribute("id") int id) {
-        String result = accountServer.modifyEmail(vo, id);
-        return result == null ? RestBean.success() : RestBean.failure(400,result);
+        return this.messageHander(()->
+            accountServer.modifyEmail(vo,id));
+    }
+
+    @PostMapping("/change-password")
+    public RestBean<Void> changePassword(@RequestAttribute("id") int id,
+                                         @RequestBody @Valid ChangePasswordVO vo) {
+        return this.messageHander(() ->
+                accountServer.changePassword(id,vo));
+    }
+
+    @PostMapping("save-privacy")
+    public RestBean<Void> savePrivacy(@RequestAttribute("id") int id,
+                                      @RequestBody @Valid SavePrivacyVO vo) {
+        privacyService.savePrivacy(id, vo);
+        return RestBean.success();
+    }
+
+    @GetMapping("/privacy")
+    public RestBean<AccountPrivacyVO> privacy(@RequestAttribute("id") int id) {
+        return RestBean.success(privacyService.accountPrivacy(id).asViewObject(AccountPrivacyVO.class));
+    }
+
+    private <T> RestBean<T> messageHander(Supplier<String> action) {
+        String message = action.get();
+        if (message == null) {
+            return RestBean.success();
+        }else {
+            return RestBean.failure(400,message);
+        }
     }
 
 

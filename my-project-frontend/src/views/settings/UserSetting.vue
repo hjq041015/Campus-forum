@@ -129,7 +129,7 @@ function modifyEmail() {
 </script>
 
 <template>
-<div style="display: flex">
+<div style="display: flex;max-width: 950px;margin: auto">
   <div class="setting-left">
     <card :icon="User" title="账号信息设置" desc="在这里你可以编辑自己的个人信息,您可以在隐私设置中选择是否展示这些信息" >
       <el-form :model="baseForm" :rules="rules" ref="baseFormRef"  label-position="top" style="margin: 0 10px 10px 10px">
@@ -170,7 +170,7 @@ function modifyEmail() {
               <el-input v-model="emailForm.code" placeholder="请输入验证码"/>
             </el-col>
             <el-col span="6">
-              <el-button @click="sendEmail" type="success" style="width: 100%" :disabled="!isValidate || coldTime > 0" plain>{{coldTime > 0 ? `请稍后${coldTime}秒` : `获取验证码`}}}</el-button>
+              <el-button @click="sendEmail" type="success" style="width: 100%" :disabled="!isValidate || coldTime > 0" plain>{{coldTime > 0 ? `请稍后${coldTime}秒` : `获取验证码`}}</el-button>
             </el-col>
           </el-row>
         </el-form-item>

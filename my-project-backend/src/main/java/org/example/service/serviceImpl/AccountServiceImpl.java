@@ -6,17 +6,16 @@ import jakarta.annotation.Resource;
 import org.example.Util.Const;
 import org.example.Util.FlowUtil;
 import org.example.entity.dto.Account;
-import org.example.entity.vo.request.ConfirmResetVO;
-import org.example.entity.vo.request.EmailModifyVO;
-import org.example.entity.vo.request.EmailRegistVO;
-import org.example.entity.vo.request.EmailResetVO;
+import org.example.entity.vo.request.*;
 import org.example.mappers.AccountMapper;
 import org.example.service.AccountServer;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +25,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @Service
-public class AccountServerImpl extends ServiceImpl<AccountMapper, Account> implements AccountServer {
+public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> implements AccountServer {
 
     @Resource
     RabbitTemplate Rabbittemplate;
@@ -39,6 +38,10 @@ public class AccountServerImpl extends ServiceImpl<AccountMapper, Account> imple
 
     @Resource
     PasswordEncoder encoder;
+
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -147,6 +150,18 @@ public class AccountServerImpl extends ServiceImpl<AccountMapper, Account> imple
         if(this.existsAccountByEmail(email)) return "此邮件已被他人注册";
         this.update().eq("id",id).set("email",email).update();
         return null;
+    }
+
+     @Override
+    public String changePassword(int id, ChangePasswordVO vo) {
+        String password = this.query().eq("id", id).one().getPassword();
+        if(!passwordEncoder.matches(vo.getPassword(), password))
+            return "原密码错误，请重新输入！";
+        boolean success = this.update()
+                .eq("id", id)
+                .set("password", passwordEncoder.encode(vo.getNew_password()))
+                .update();
+        return success ? null : "未知错误，请联系管理员";
     }
 
     // 验证这个ip是否已经发起过请求
