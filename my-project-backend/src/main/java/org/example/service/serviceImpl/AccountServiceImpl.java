@@ -97,7 +97,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         if (!code.equals(emailRegistVO.getCode())) return "验证码输入错误,请重新输入";
         if (this.existsAccountByEmail(email)) return "此邮箱已被其他人注册";
         if (this.existsAccountByUsername(username)) return "此用户名已被其他人注册";
-        Account account = new Account(null,username,password,email,"user",new Date());
+        Account account = new Account(null,username,password,email,"user",null,new Date());
         if (this.save(account)) {
           this.deleteVerifyEmailCode(email);
             return null;

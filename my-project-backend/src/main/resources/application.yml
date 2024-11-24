@@ -1,10 +1,15 @@
 spring:
+  web:
+    cors:
+      origin: '*'
+      credentials: false
+      methods: '*'
   mail:
     host: smtp.163.com
     username: huangjiaqi041015@163.com
     password: GYeBE35YecRJHyj5
   rabbitmq:
-    addresses: 192.168.116.131
+    addresses: 192.168.137.2
     username: root
     password: 123456
     virtual-host: /
@@ -17,6 +22,10 @@ spring:
     jwt:
       key: abcdefj
       expire: 7
+  minio:
+    endpoint: http://192.168.137.2:9000
+    username: minio
+    password: password
 server:
   servlet:
     encoding:
