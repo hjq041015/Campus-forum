@@ -22,6 +22,8 @@ spring:
     jwt:
       key: abcdefj
       expire: 7
+  weather:
+    key: c7df004f671d4e1fa1c7b1dfc26d4841
   minio:
     endpoint: http://192.168.137.2:9000
     username: minio
