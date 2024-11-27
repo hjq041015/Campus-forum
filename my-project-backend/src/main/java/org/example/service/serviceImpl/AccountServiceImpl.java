@@ -164,10 +164,10 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         return success ? null : "未知错误，请联系管理员";
     }
 
-    // 验证这个ip是否已经发起过请求
+    // 验证这个ip是否已经被限制 false为已经限制
     private boolean verifyLimit(String ip){
         String key = Const.VERIFY_EMAIL_LIMIT + ip;
-         return util.limitOnceCLick(key,60);
+         return util.limitOnceCheck(key,60);
     }
 
     // 验证邮件是否已被注册

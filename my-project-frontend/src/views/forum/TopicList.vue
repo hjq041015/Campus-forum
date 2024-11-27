@@ -1,10 +1,11 @@
 <script setup>
-import {computed,reactive} from "vue";
+import {computed,reactive,ref} from "vue";
 import LightCard from "@/components/LightCard.vue";
 import {Calendar, CollectionTag, EditPen, Link} from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
 import {get} from "@/net/index.js";
 import {ElMessage} from "element-plus";
+import TopicEditor from "@/components/TopicEditor.vue";
 
 
 const today = computed(() => {
@@ -38,6 +39,8 @@ navigator.geolocation.getCurrentPosition(position => {
     enableHighAccuracy: true
 })
 
+const editor = ref(false)
+
 
 </script>
 
@@ -45,7 +48,7 @@ navigator.geolocation.getCurrentPosition(position => {
 <div style="display:flex;gap: 20px; margin: 20px auto; max-width:900px;">
             <div style="flex: 1">
             <light-card>
-                <div class="create-topic">
+                <div @click="editor=true"  class="create-topic">
                     <el-icon><EditPen/></el-icon>
                     点击发表主题...
                 </div>
@@ -106,6 +109,7 @@ navigator.geolocation.getCurrentPosition(position => {
                 </div>
             </div>
             </div>
+            <topic-editor :show="editor" @success="editor = false" @close="editor = false"/>
 </div>
 </template>
 

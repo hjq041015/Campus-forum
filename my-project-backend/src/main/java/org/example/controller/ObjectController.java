@@ -37,6 +37,7 @@ public class ObjectController {
                 service.fetchImageFromMinio(stream,imagePath);
                 // 设置缓存过期时间,加上这个标头,浏览器会自动开启缓存
                 response.setHeader("Cache-Control", "max-age=2592000");
+                response.setHeader("Content-Type","image/jpg");
             }catch (ErrorResponseException e) {
                 if (e.response().code() == 404) {
                     response.setStatus(404);

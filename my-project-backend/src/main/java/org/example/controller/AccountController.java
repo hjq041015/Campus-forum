@@ -2,6 +2,7 @@ package org.example.controller;
 
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
+import org.example.Util.ControllerUtil;
 import org.example.entity.RestBean;
 import org.example.entity.dto.Account;
 import org.example.entity.dto.AccountDetails;
@@ -18,7 +19,7 @@ import org.example.service.AccountServer;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
-import java.util.function.Supplier;
+
 
 @RestController
 @RequestMapping("/api/user")
@@ -31,6 +32,9 @@ public class AccountController {
 
     @Resource
     AccountPrivacyService privacyService;
+
+    @Resource
+    ControllerUtil util;
 
     @GetMapping("/info")
     RestBean<AccountVO> info(@RequestAttribute("id") String id){
@@ -56,14 +60,14 @@ public class AccountController {
     @PostMapping("/modify-email")
     public RestBean<Void> modifyEmail(@RequestBody @Valid EmailModifyVO vo,
                                       @RequestAttribute("id") int id) {
-        return this.messageHander(()->
+        return util.messageHander(()->
             accountServer.modifyEmail(vo,id));
     }
 
     @PostMapping("/change-password")
     public RestBean<Void> changePassword(@RequestAttribute("id") int id,
                                          @RequestBody @Valid ChangePasswordVO vo) {
-        return this.messageHander(() ->
+        return util.messageHander(() ->
                 accountServer.changePassword(id,vo));
     }
 
@@ -79,14 +83,6 @@ public class AccountController {
         return RestBean.success(privacyService.accountPrivacy(id).asViewObject(AccountPrivacyVO.class));
     }
 
-    private <T> RestBean<T> messageHander(Supplier<String> action) {
-        String message = action.get();
-        if (message == null) {
-            return RestBean.success();
-        }else {
-            return RestBean.failure(400,message);
-        }
-    }
 
 
 }
