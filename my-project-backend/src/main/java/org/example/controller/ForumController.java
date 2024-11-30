@@ -2,9 +2,12 @@ package org.example.controller;
 
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import org.example.Util.ControllerUtil;
 import org.example.entity.RestBean;
 import org.example.entity.vo.request.CreateTopicVo;
+import org.example.entity.vo.response.TopicPreviewVO;
+import org.example.entity.vo.response.TopicTopVO;
 import org.example.entity.vo.response.TopicTypeVO;
 import org.example.entity.vo.response.WeatherVO;
 import org.example.service.TopicService;
@@ -55,5 +58,14 @@ public class ForumController {
         return util.messageHander(() -> topicService.createTopic(id, vo));
     }
 
+    @GetMapping("/list-topic")
+    public RestBean<List<TopicPreviewVO>> listTopic(@RequestParam  @Min(0) int page,
+                                                    @RequestParam  @Min(0)  int type) {
+        return RestBean.success(topicService.listTopic(page, type));
+    }
 
+    @GetMapping("/top-topic")
+    public RestBean<List<TopicTopVO>> topTopic() {
+        return RestBean.success(topicService.topTopic());
+    }
 }

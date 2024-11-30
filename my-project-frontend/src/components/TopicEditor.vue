@@ -9,11 +9,12 @@ import axios from "axios";
 import {accessHeader, get, post} from "@/net";
 import {ElMessage} from "element-plus";
 import ColorDot from "@/components/ColorDot.vue";
+import {useStore} from "@/store/index.js";
 
 defineProps({
     show: Boolean
 })
-
+const store = useStore()
 const refEditor = ref()
 
 const emit = defineEmits(['close',`success`])
@@ -23,7 +24,7 @@ const editor = reactive({
     title: '',
     text: '',
     uploading: false,
-    types: []
+
 })
 
 function submitTopic() {
@@ -40,7 +41,7 @@ function submitTopic() {
         ElMessage.warning(`请选择一个合适的帖子类型!`)
     }
     post("/api/forum/create-topic",{
-        type: editor.type,
+        type: editor.type.id,
         title: editor.title,
         content: editor.text
     },() =>{
@@ -66,7 +67,7 @@ function deltaToText(delta) {
 const contentLength = computed(() => deltaToText(editor.text).length)
 
 
-get("api/forum/types",data => editor.types = data)
+
 
 Quill.register('modules/imageResize', ImageResize)
 Quill.register('modules/ImageExtend', ImageExtend)
@@ -137,8 +138,8 @@ const editorOption = {
         </template>
         <div style="display: flex; gap: 10px">
             <div style="width: 150px">
-                <el-select placeholder="请选择主题类型..." value-key="id" v-model="editor.type" :disabled="!editor.types.length">
-                    <el-option v-for="item in editor.types" :value="item" :label="item.name">
+                <el-select placeholder="请选择主题类型..." value-key="id" v-model="editor.type" :disabled="!store.forum.types.length">
+                    <el-option v-for="item in store.forum.types" :value="item" :label="item.name">
                         <div>
                             <color-dot :color="item.color"/>
                             <span style="margin-left: 10px">{{item.name}}</span>

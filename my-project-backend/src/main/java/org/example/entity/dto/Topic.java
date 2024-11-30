@@ -7,6 +7,7 @@ import lombok.Data;
 
 import java.util.Date;
 
+
 @Data
 @TableName("db_topic")
 public class Topic {
@@ -14,7 +15,9 @@ public class Topic {
     Integer id;
     String title;
     String content;
-    int uid;
     int type;
     Date time;
+    Integer uid;
+    String username;
+    String avatar;
 }
