@@ -6,10 +6,7 @@ import jakarta.validation.constraints.Min;
 import org.example.Util.ControllerUtil;
 import org.example.entity.RestBean;
 import org.example.entity.vo.request.CreateTopicVo;
-import org.example.entity.vo.response.TopicPreviewVO;
-import org.example.entity.vo.response.TopicTopVO;
-import org.example.entity.vo.response.TopicTypeVO;
-import org.example.entity.vo.response.WeatherVO;
+import org.example.entity.vo.response.*;
 import org.example.service.TopicService;
 import org.example.service.WeatherService;
 import org.springframework.web.bind.annotation.*;
@@ -61,11 +58,16 @@ public class ForumController {
     @GetMapping("/list-topic")
     public RestBean<List<TopicPreviewVO>> listTopic(@RequestParam  @Min(0) int page,
                                                     @RequestParam  @Min(0)  int type) {
-        return RestBean.success(topicService.listTopic(page, type));
+        return RestBean.success(topicService.listTopic(page +1, type));
     }
 
     @GetMapping("/top-topic")
     public RestBean<List<TopicTopVO>> topTopic() {
         return RestBean.success(topicService.topTopic());
+    }
+
+    @GetMapping("/topic")
+    public RestBean<TopicDetailVo> topic(@RequestParam @Min(0) int tid) {
+        return RestBean.success(topicService.topic(tid));
     }
 }

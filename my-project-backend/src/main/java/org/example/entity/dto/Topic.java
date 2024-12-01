@@ -18,6 +18,5 @@ public class Topic {
     int type;
     Date time;
     Integer uid;
-    String username;
-    String avatar;
+
 }

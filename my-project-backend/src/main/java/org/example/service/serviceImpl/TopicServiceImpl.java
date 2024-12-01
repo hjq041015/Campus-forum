@@ -4,19 +4,20 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
+import net.sf.jsqlparser.statement.select.Top;
 import org.example.Util.CacheUtils;
 import org.example.Util.Const;
 import org.example.Util.FlowUtil;
-import org.example.entity.dto.Topic;
-import org.example.entity.dto.TopicType;
+import org.example.entity.dto.*;
 import org.example.entity.vo.request.CreateTopicVo;
+import org.example.entity.vo.response.TopicDetailVo;
 import org.example.entity.vo.response.TopicPreviewVO;
 import org.example.entity.vo.response.TopicTopVO;
-import org.example.mappers.TopicMapper;
-import org.example.mappers.TopicTypeMapper;
+import org.example.mappers.*;
 import org.example.service.TopicService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,15 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Resource
     CacheUtils cacheUtils;
+
+    @Resource
+    AccountMapper accountMapper;
+
+    @Resource
+    AccountDetailsMapper accountDetailsMapper;
+
+    @Resource
+    AccountPrivacyMapper accountPrivacyMapper;
 
     private static Set<Integer> types = null;
 
@@ -76,16 +86,17 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     }
 
     @Override
-    public List<TopicPreviewVO> listTopic(int page, int type) {
-        String key = Const.FORUM_TOPIC_PREVIEW_CACHE + page + type;
+    public List<TopicPreviewVO> listTopic(int pageNumber, int type) {
+        String key = Const.FORUM_TOPIC_PREVIEW_CACHE + pageNumber + type;
         List<TopicPreviewVO>  list = cacheUtils.takeListFromCache(key,TopicPreviewVO.class);
         if (list != null) return list;
-        List<Topic> topics;
+        Page<Topic> page = Page.of(pageNumber,10);
         if (type == 0) {
-            topics = baseMapper.getTopics(page *10);
+            baseMapper.selectPage(page,Wrappers.<Topic>query().orderByDesc("time"));
         }else {
-            topics = baseMapper.getTopicsByType(page * 10, type );
+            baseMapper.selectPage(page,Wrappers.<Topic>query().eq("type",type).orderByDesc("time"));
         }
+        List<Topic> topics = page.getRecords();
         if (topics.isEmpty()) return null;
         list = topics.stream().map(this::resolveToPreviewVo).toList();
         cacheUtils.saveListToCache(key,list,60);
@@ -104,10 +115,33 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         }).toList();
     }
 
+    @Override
+    public TopicDetailVo topic(int tid) {
+        TopicDetailVo vo = new TopicDetailVo();
+        Topic topic = baseMapper.selectById(tid);
+        BeanUtils.copyProperties(topic,vo);
+        TopicDetailVo.User user = new TopicDetailVo.User();
+        vo.setUser(this.FillUserDetailByPrivacy(user,topic.getUid()));
+        return vo;
+    }
+
+
+    private <T> T FillUserDetailByPrivacy(T targert, int uid) {
+        Account account = accountMapper.selectById(uid);
+        AccountDetails details = accountDetailsMapper.selectById(uid);
+        AccountPrivacy privacy = accountPrivacyMapper.selectById(uid);
+        String[] ignore = privacy.hiddenFields();
+        BeanUtils.copyProperties(account,targert,ignore);
+        BeanUtils.copyProperties(details,targert,ignore);
+        return  targert;
+    }
+
+
 
     // 此方法将传入的Topic对象转换成TopicPreviewVo对象
     private TopicPreviewVO resolveToPreviewVo(Topic topic){
         TopicPreviewVO vo = new TopicPreviewVO();
+        BeanUtils.copyProperties(accountMapper.selectById(topic.getUid()),vo);
         BeanUtils.copyProperties(topic,vo);
         List<String> images = new ArrayList<>();
         StringBuilder previewText = new StringBuilder();

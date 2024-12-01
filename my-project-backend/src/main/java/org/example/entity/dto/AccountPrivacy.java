@@ -6,6 +6,10 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import org.example.entity.BaseData;
 
+import java.lang.reflect.Field;
+import java.util.LinkedList;
+import java.util.List;
+
 
 @Data
 @TableName("db_account_privacy")
@@ -18,4 +22,18 @@ public class AccountPrivacy implements BaseData {
     boolean email = true;
     boolean gender = true;
 
+    public String [] hiddenFields() {
+       List<String> strings = new LinkedList<>();
+       Field[] fields = this.getClass().getDeclaredFields();
+       for (Field field : fields) {
+          try{
+               if (field.getType().equals(Boolean.class) && !field.getBoolean(this)) {
+                  strings.add(field.getName());
+               }
+
+          }catch (Exception ignored) {}
+
+       }
+       return strings.toArray(String[]::new);
+    }
 }
