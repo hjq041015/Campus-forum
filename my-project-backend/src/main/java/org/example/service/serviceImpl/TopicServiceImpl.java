@@ -2,13 +2,11 @@ package org.example.service.serviceImpl;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
-import net.sf.jsqlparser.statement.select.Top;
 import org.example.Util.CacheUtils;
 import org.example.Util.Const;
 import org.example.Util.FlowUtil;
@@ -20,9 +18,13 @@ import org.example.entity.vo.response.TopicTopVO;
 import org.example.mappers.*;
 import org.example.service.TopicService;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -46,6 +48,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Resource
     AccountPrivacyMapper accountPrivacyMapper;
+
+    @Resource
+    StringRedisTemplate stringRedisTemplate;
 
     private static Set<Integer> types = null;
 
@@ -116,13 +121,82 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     }
 
     @Override
-    public TopicDetailVo topic(int tid) {
+    public TopicDetailVo topic(int tid,int uid) {
         TopicDetailVo vo = new TopicDetailVo();
         Topic topic = baseMapper.selectById(tid);
         BeanUtils.copyProperties(topic,vo);
+        TopicDetailVo.Interact interact = new TopicDetailVo.Interact(
+                hasInteract(uid,tid,"like"),
+                hasInteract(uid,tid,"collect")
+        );
+        vo.setInteract(interact);
         TopicDetailVo.User user = new TopicDetailVo.User();
         vo.setUser(this.FillUserDetailByPrivacy(user,topic.getUid()));
         return vo;
+    }
+
+    private boolean hasInteract(int uid,int tid,String type) {
+        String key = tid + ":" + uid;
+        if (stringRedisTemplate.opsForHash().hasKey(type,key)){
+            return Boolean.parseBoolean(stringRedisTemplate.opsForHash().entries(type).get(key).toString());
+        }
+        // 大于0说明数据库中有数据
+        return baseMapper.userInteractCount(tid,type,uid) > 0;
+    }
+     @Override
+        public List<TopicPreviewVO> listTopicCollection(int uid) {
+             return baseMapper.collectionTopic(uid)
+                    .stream()
+                    .map( topic -> {
+                        TopicPreviewVO vo = new TopicPreviewVO();
+                        BeanUtils.copyProperties(topic,vo);
+                        return vo;
+                    }
+            ).toList();
+        }
+
+
+    @Override
+    public void interact(Interact interact, Boolean state) {
+        String type = interact.getType();
+        synchronized (type.intern()) {
+             stringRedisTemplate.opsForHash().put(type,interact.toKey(),Boolean.toString(state));
+             saveInteractSchedule(type);
+        }
+
+    }
+
+    // 确保在一段时间后（3秒）只执行一次保存操作,避免数据库冲突
+    private final Map<String ,Boolean> state = new HashMap<>();
+    ScheduledExecutorService service = Executors.newScheduledThreadPool(2);
+    private void saveInteractSchedule(String type) {
+        if(!state.getOrDefault(type, false)) {
+            state.put(type, true);
+            service.schedule(() -> {
+                saveInteract(type);
+                state.put(type, false);
+            }, 3, TimeUnit.SECONDS);
+        }
+    }
+
+    // 根据Type以及state的不同,完成点赞取消点赞,收藏取消收藏功能
+    private void saveInteract(String type) {
+        synchronized (type.intern()) {
+        List<Interact> check = new LinkedList<>();
+        List<Interact> uncheck = new LinkedList<>();
+        stringRedisTemplate.opsForHash().entries(type).forEach( (k, v) -> {
+          if( Boolean.parseBoolean(v.toString()) )  {
+              check.add(Interact.parseInteract(k.toString(),type));
+          }else {
+              uncheck.add(Interact.parseInteract(k.toString(),type));
+          }
+        });
+        if (!check.isEmpty())
+            baseMapper.addInteract(check,type);
+        if (!uncheck.isEmpty())
+            baseMapper.deleteInteract(uncheck,type);
+        stringRedisTemplate.delete(type);
+        }
     }
 
 
@@ -143,6 +217,8 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         TopicPreviewVO vo = new TopicPreviewVO();
         BeanUtils.copyProperties(accountMapper.selectById(topic.getUid()),vo);
         BeanUtils.copyProperties(topic,vo);
+        vo.setLike(baseMapper.interactCount(topic.getId(),"like"));
+        vo.setCollect(baseMapper.interactCount(topic.getId(),"collect"));
         List<String> images = new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
         JSONArray ops = JSONObject.parseObject(topic.getContent()).getJSONArray("ops");

@@ -16,4 +16,6 @@ public class TopicPreviewVO {
     List<String> image;
     String username;
     String avatar;
+    int like;
+    int collect;
 }

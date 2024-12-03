@@ -2,16 +2,17 @@
 import {computed,reactive,ref,watch} from "vue";
 import LightCard from "@/components/LightCard.vue";
 import {
-    Calendar,
+    ArrowRightBold,
+    Calendar, CircleCheck,
     Clock,
     CollectionTag,
     Compass,
     Document,
     Edit,
-    EditPen,
+    EditPen, FolderOpened,
     Link,
     Microphone,
-    Picture
+    Picture, Star
 } from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
 import {get} from "@/net/index.js";
@@ -22,6 +23,7 @@ import axios from "axios";
 import ColorDot from "@/components/ColorDot.vue";
 import router from "@/router/index.js";
 import TopicTag from "@/components/TopicTag.vue";
+import TopicCollectionList from "@/components/TopicCollectionList.vue";
 
 
 const store = useStore()
@@ -29,6 +31,8 @@ const today = computed(() => {
     const date = new Date()
     return `${date.getFullYear()} 年 ${date.getMonth() + 1} 月 ${date.getDate()} 日`
 })
+const collects = ref(false)
+
 
 const weather = reactive({
     location: {},
@@ -162,6 +166,15 @@ const editor = ref(false)
                                 <el-image class="topic-image" v-for="img in item.images" :src="img" fit="cover">
 
                                 </el-image>
+                                <div style="display:flex;gap: 20px; font-size: 13px; margin-top: 10px; opacity: 0.8">
+                                    <div>
+                                    <el-icon style="vertical-align: middle"><CircleCheck/></el-icon>{{item.like}}点赞
+                                </div>
+                                <div>
+                                    <el-icon style="vertical-align: middle"><Star/></el-icon>{{item.collect}}收藏
+                                </div>
+                                </div>
+
                             </div>
                    </light-card>
                 </div>
@@ -175,7 +188,13 @@ const editor = ref(false)
             </div>
             <div style="width: 280px" >
                 <div style="position: sticky;top: 20px">
-                <light-card>
+                    <light-card>
+                    <div class="collect-list-button" @click="collects = true">
+                        <span><el-icon><FolderOpened /></el-icon> 查看我的收藏</span>
+                        <el-icon style="transform: translateY(3px)"><ArrowRightBold/></el-icon>
+                    </div>
+                </light-card>
+                <light-card style="margin-top: 10px">
                     <div style="font-weight: bold ">
                         <el-icon><CollectionTag/></el-icon>
                         论坛公告
@@ -217,10 +236,22 @@ const editor = ref(false)
             </div>
             </div>
             <topic-editor :show="editor" @success="onTopicCreate()"  @close="editor = false"/>
+            <topic-collection-list :show="collects" @close="collects = false"/>
 </div>
 </template>
 
 <style lang="less" scoped>
+.collect-list-button {
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    transition: .3s;
+
+    &:hover {
+        cursor: pointer;
+        opacity: 0.6;
+    }
+}
 .top-topic {
     display: flex;
 

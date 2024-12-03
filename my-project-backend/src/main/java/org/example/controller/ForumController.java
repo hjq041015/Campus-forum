@@ -3,14 +3,17 @@ package org.example.controller;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import org.example.Util.ControllerUtil;
 import org.example.entity.RestBean;
+import org.example.entity.dto.Interact;
 import org.example.entity.vo.request.CreateTopicVo;
 import org.example.entity.vo.response.*;
 import org.example.service.TopicService;
 import org.example.service.WeatherService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -67,7 +70,22 @@ public class ForumController {
     }
 
     @GetMapping("/topic")
-    public RestBean<TopicDetailVo> topic(@RequestParam @Min(0) int tid) {
-        return RestBean.success(topicService.topic(tid));
+    public RestBean<TopicDetailVo> topic(@RequestParam @Min(0) int tid,
+                                         @RequestAttribute("id") int uid) {
+        return RestBean.success(topicService.topic(tid,uid));
+    }
+
+    @GetMapping("/interact")
+    public RestBean<Void>  interact(@RequestParam @Min(0) int tid,
+                                    @RequestAttribute("id") int id,
+                                    @RequestParam @Pattern(regexp = "like|collect") String type,
+                                    @RequestParam Boolean state) {
+        topicService.interact(new Interact(tid,id,new Date(),type),state);
+        return RestBean.success();
+    }
+
+    @GetMapping("list-collect")
+    public RestBean<List<TopicPreviewVO>>  listCollect(@RequestAttribute("id") int id) {
+        return RestBean.success(topicService.listTopicCollection(id));
     }
 }
