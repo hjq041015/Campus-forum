@@ -1,37 +1,77 @@
 <script setup>
-import {reactive} from "vue";
+import {reactive,ref} from "vue";
 import {useRoute} from "vue-router";
-import {get} from "@/net/index.js";
+import {get, post} from "@/net/index.js";
 import axios from "axios";
-import {ArrowLeft, CircleCheck, Female, Male, Star} from "@element-plus/icons-vue";
+import {ArrowLeft, CircleCheck, EditPen, Female, Male, Plus, Star} from "@element-plus/icons-vue";
 import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 import Card from "@/components/Card.vue";
 import router from "@/router/index.js";
 import TopicTag from "@/components/TopicTag.vue";
 import InteractButton from "@/components/interactButton.vue";
 import {ElMessage} from "element-plus";
+import {useStore} from "@/store/index.js";
+import TopicEditor from "@/components/TopicEditor.vue";
+import TopicCommentEditor from "@/components/TopicCommentEditor.vue";
 
 
-
-
+const store = useStore()
 const route = useRoute()
 const tid = route.params.tid
 const topic = reactive({
     data: null,
     like: false,
-    collect: false
+    collect: false,
+    comments: null,
+    page: 1
 })
+const comment = reactive({
+    show:false,
+    text:'',
+    quote: null
+})
+const edit = ref(false)
+
+
+
+const init = () => get(`api/forum/topic?tid=${tid}`, data => {
+    topic.data = data
+    topic.like = data.interact.like
+    topic.collect = data.interact.collect
+    loadComments(1)
+})
+init()
+
+function onCommentAdd() {
+    comment.show = false
+     loadComments(1)
+}
+
+function loadComments(page) {
+    topic.comments = null
+    topic.page = page
+    get(`/api/forum/comments?tid=${tid}&page=${page - 1}`, data => topic.comments = data)
+}
 
 function convertToHtml(content) {
     const ops = JSON.parse(content).ops
     const converter = new QuillDeltaToHtmlConverter(ops,{inlineStyles: true});
     return converter.convert();
 }
-get(`api/forum/topic?tid=${tid}`, data => {
-    topic.data = data
-    topic.like = data.interact.like
-    topic.collect = data.interact.collect
-} )
+
+function updateTopic(editor) {
+    post('/api/forum/update-topic', {
+        id: tid,
+        type: editor.type.id,
+        title: editor.title,
+        content: editor.text
+    }, () => {
+        ElMessage.success('帖子内容更新成功！')
+        edit.value = false
+        init()
+    })
+}
+
 
 
 function interact(type,message) {
@@ -60,7 +100,7 @@ function interact(type,message) {
     </div>
     <div class="topic-main">
         <div class="topic-main-left">
-            <el-avatar :src="axios.defaults.baseURL+ '/image' + topic.data.user.avatar " :size="60"/>
+            <el-avatar :src="axios.defaults.baseURL+ '/images' + topic.data.user.avatar " :size="60"/>
             <div>
                 <div style="font-size:18px;font-weight: bold ">
                     {{topic.data.user.username}}
@@ -89,6 +129,11 @@ function interact(type,message) {
                 <div>发帖时间: {{new Date(topic.data.time).toLocaleString()}}</div>
             </div>
             <div style="text-align: right; margin-top: 30px">
+                <interact-button name="编辑帖子" color="dodgerblue" :check="false"
+                                     @check="edit = true" style="margin-right: 20px"
+                                     v-if="store.user.id === topic.data.user.id">
+                        <el-icon><EditPen/></el-icon>
+                    </interact-button>
                 <interact-button check-name="已点赞" name="点赞" color="pink" :check="topic.like"
                         @check="interact('like','点赞')">
                     <el-icon><CircleCheck/></el-icon>
@@ -100,11 +145,78 @@ function interact(type,message) {
 
             </div>
         </div>
-    </div>
+         <topic-editor :show="edit" @close="edit = false" v-if="topic.data && store.forum.types"
+                      :default-type="topic.data.type" :default-text="topic.data.content"
+                      :default-title="topic.data.title" submit-button="更新帖子内容" :submit="updateTopic"/>
+        </div>
+    <transition name="el-fade-in-linear" mode="out-in">
+        <div >
+            <div class="topic-main" style="margin-top: 10px" v-for="item in topic.comments">
+                <div class="topic-main-left">
+            <el-avatar :src="axios.defaults.baseURL+ '/images' + item.user.avatar " :size="60"/>
+            <div>
+                <div style="font-size:18px;font-weight: bold ">
+                    {{item.user.username}}
+                    <span style="color: hotpink" v-if="item.user.gender === 1">
+                        <el-icon><Female/></el-icon>
+                    </span>
+                    <span style="color: dodgerblue" v-if="item.user.gender === 0">
+                        <el-icon><Male/></el-icon>
+                    </span>
+                </div>
+                <div class="desc">{{item.user.email}}</div>
+            </div>
+            <el-divider style="margin: 10px 0"/>
+            <div style="text-align: left; margin: 0 5px">
+                <div class="desc">微信号:{{item.user.wx || '已隐藏或未填写'}}</div>
+                <div class="desc">QQ号:{{item.user.qq || '已隐藏或未填写'}}</div>
+                <div class="desc">手机号:{{item.user.phone || '已隐藏或未填写'}}</div>
+            </div>
+        </div>
+        <div class="topic-main-right">
+            <div style="font-size: 13px;color: grey">
+                <div>发布评论时间: {{new Date(item.time).toLocaleString()}}</div>
+            </div>
+            <div class="topic-content" v-html="convertToHtml(item.content)"></div>
+
+        </div>
+            </div>
+             <div style="width: fit-content;margin: 20px auto">
+                    <el-pagination background layout="prev, pager, next"
+                                   v-model:current-page="topic.page" @current-change="loadComments"
+                                   :total="topic.data.comments" :page-size="10"
+                                    hide-on-single-page/>
+                </div>
+        </div>
+    </transition>
+        <topic-comment-editor :show="comment.show" @close="comment.show = false" :tid="tid"
+                              :quote="comment.quote" @comment="onCommentAdd"/>
+        <div class="add-comment" @click="comment.show = true"  >
+            <el-icon><plus/></el-icon>
+        </div>
 </div>
 </template>
 
 <style scoped>
+.add-comment {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 18px;
+    color: var(--el-color-primary);
+    text-align: center;
+    line-height: 45px;
+    background: var(--el-bg-color-overlay);
+    box-shadow: var(--el-box-shadow-lighter);
+
+    &:hover {
+        background: var(--el-border-color-extra-light);
+        cursor: pointer;
+    }
+}
 .topic-main {
     display: flex;
     border-radius: 7px;

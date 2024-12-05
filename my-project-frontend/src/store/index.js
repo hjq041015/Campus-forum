@@ -4,6 +4,7 @@ import axios from "axios";
      state: () => {
          return {
              user: {
+                 id: -1,
                  username: '',
                  email: '',
                  role: '',

@@ -11,7 +11,10 @@ import org.example.Util.CacheUtils;
 import org.example.Util.Const;
 import org.example.Util.FlowUtil;
 import org.example.entity.dto.*;
+import org.example.entity.vo.request.AddCommentVO;
 import org.example.entity.vo.request.CreateTopicVo;
+import org.example.entity.vo.request.TopicUpdateVO;
+import org.example.entity.vo.response.CommentVO;
 import org.example.entity.vo.response.TopicDetailVo;
 import org.example.entity.vo.response.TopicPreviewVO;
 import org.example.entity.vo.response.TopicTopVO;
@@ -25,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 
@@ -35,6 +39,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     TopicTypeMapper topicTypeMapper;
 
     @Resource
+
     FlowUtil flowUtil;
 
     @Resource
@@ -51,6 +56,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Resource
     StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    TopicCommentMapper topicCommentMapper;
 
     private static Set<Integer> types = null;
 
@@ -70,7 +78,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Override
     public String createTopic(int uid, CreateTopicVo vo) {
-       if (!this.textLimitCheck(vo.getContent()))
+       if (!this.textLimitCheck(vo.getContent(),20000))
            return "内容过多超过限制,无法发表";
        if (!types.contains(vo.getType()))
            return "发表的种类不合法";
@@ -132,6 +140,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         vo.setInteract(interact);
         TopicDetailVo.User user = new TopicDetailVo.User();
         vo.setUser(this.FillUserDetailByPrivacy(user,topic.getUid()));
+        vo.setComments(topicCommentMapper.selectCount(Wrappers.<TopicComment>query().eq("tid",tid)));
         return vo;
     }
 
@@ -154,6 +163,57 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
                     }
             ).toList();
         }
+
+    @Override
+    public String updateTopic(int uid, TopicUpdateVO vo) {
+        if(!textLimitCheck(vo.getContent(),20000))
+            return "文章内容太多，发文失败！";
+        if(!types.contains(vo.getType()))
+            return "文章类型非法！";
+        baseMapper.update(null, Wrappers.<Topic>update()
+                .eq("uid", uid)
+                .eq("id", vo.getId())
+                .set("title", vo.getTitle())
+                .set("content", vo.getContent().toString())
+                .set("type", vo.getType())
+        );
+        return null;
+    }
+
+    @Override
+    public String addComment(int uid, AddCommentVO vo) {
+        String key = Const.FORUM_TOPIC_COMMENT;
+        if (!this.textLimitCheck(JSONObject.parseObject(vo.getContent()),2000))
+           return "评论过多超过限制,无法发表";
+        if(!flowUtil.limitPeriodCounterCheck(key,5,3600))
+            return "评论过于频繁,无法发表";
+        TopicComment comment = new TopicComment();
+        BeanUtils.copyProperties(vo,comment);
+        comment.setUid(uid);
+        comment.setTime(new Date());
+        topicCommentMapper.insert(comment);
+        return null;
+    }
+
+    @Override
+    public List<CommentVO> comments(int tid, int pageNumber) {
+        Page<TopicComment> page = Page.of(pageNumber,10);
+        topicCommentMapper.selectPage(page,Wrappers.<TopicComment>query().eq("tid",tid));
+        return page.getRecords().stream().map(dto -> {
+            CommentVO vo = new CommentVO();
+            BeanUtils.copyProperties(dto,vo);
+            if (dto.getQuote() > 0) {
+                JSONObject object = JSONObject.parseObject(topicCommentMapper.selectOne(Wrappers.<TopicComment>query().eq("id", dto.getQuote()).orderByAsc("time")).getContent());
+                StringBuilder builder = new StringBuilder();
+                this.shortContent(object.getJSONArray("ops"),builder,ignore ->{});
+                vo.setQuote(builder.toString());
+            }
+            CommentVO.User user = new CommentVO.User();
+            this.FillUserDetailByPrivacy(user,dto.getUid());
+            vo.setUser(user);
+            return vo;
+        }).toList();
+    }
 
 
     @Override
@@ -222,6 +282,13 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         List<String> images = new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
         JSONArray ops = JSONObject.parseObject(topic.getContent()).getJSONArray("ops");
+        this.shortContent(ops,previewText, obj-> images.add(obj.toString()));
+        vo.setText(previewText.length() > 300 ? previewText.substring(0,300) : previewText.toString() );
+        vo.setImage(images);
+        return vo;
+    }
+
+    private void shortContent(JSONArray ops, StringBuilder previewText, Consumer<Object>ImageHander){
         for (Object op: ops) {
             Object insert = JSONObject.from(op).get("insert");
             if (insert instanceof String text) {
@@ -229,22 +296,17 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
                 previewText.append(text);
             }
             if (insert instanceof Map<?,?> map) {
-                Optional.ofNullable(map.get("image")).ifPresent(obj -> {
-                    images.add(obj.toString());
-                });
+                Optional.ofNullable(map.get("image")).ifPresent(ImageHander);
             }
         }
-        vo.setText(previewText.length() > 300 ? previewText.substring(0,300) : previewText.toString() );
-        vo.setImage(images);
-        return vo;
     }
 
-    private boolean textLimitCheck(JSONObject object) {
+    private boolean textLimitCheck(JSONObject object, int max) {
         if (object == null) return false;
         long length = 0;
         for (Object ops : object.getJSONArray("ops")) {
             length += JSONObject.from(ops).getString("insert").length();
-            if (length > 20000) return false;
+            if (length > max) return false;
         }
         return true;
     }

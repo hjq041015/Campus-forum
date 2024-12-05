@@ -52,7 +52,7 @@ public class FlowLimitFitter extends HttpFilter {
         long increment = Optional.ofNullable(template.opsForValue().increment(countKey)).orElse(0L);
 
         // 当计数大于10时,将此ip放入封禁名单,封禁30分钟
-        if (increment > 30) {
+        if (increment > 300) {
             template.opsForValue().set(Const.FLOW_LIMIT_BLOCK + ip, "", 30, TimeUnit.SECONDS);
             return false;
         }

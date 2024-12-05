@@ -144,7 +144,7 @@ const editor = ref(false)
                    <light-card  @click="router.push('/index/topic-detail/'+ item.id)" v-for="item in topic.list" class="topic-card">
                      <div style="display: flex">
                          <div>
-                                    <el-avatar :size="30" :src="`${axios.defaults.baseURL}/image${item.avatar}`"/>
+                                    <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"/>
                          </div>
                          <div style="margin-left: 7px;transform: translateY(-2px)">
                              <div style="font-size: 13px;font-weight: bold">{{item.username}}</div>
@@ -163,9 +163,7 @@ const editor = ref(false)
                        </div>
                             <div class="topic-content">{{item.text}}</div>
                             <div style="display: grid; grid-template-columns: repeat(3,1fr);grid-gap: 10px">
-                                <el-image class="topic-image" v-for="img in item.images" :src="img" fit="cover">
-
-                                </el-image>
+                                <el-image class="topic-image" v-for="img in item.image" :src="img" fit="cover"></el-image>
                                 <div style="display:flex;gap: 20px; font-size: 13px; margin-top: 10px; opacity: 0.8">
                                     <div>
                                     <el-icon style="vertical-align: middle"><CircleCheck/></el-icon>{{item.like}}点赞

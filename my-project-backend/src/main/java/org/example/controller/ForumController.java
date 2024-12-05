@@ -7,7 +7,9 @@ import jakarta.validation.constraints.Pattern;
 import org.example.Util.ControllerUtil;
 import org.example.entity.RestBean;
 import org.example.entity.dto.Interact;
+import org.example.entity.vo.request.AddCommentVO;
 import org.example.entity.vo.request.CreateTopicVo;
+import org.example.entity.vo.request.TopicUpdateVO;
 import org.example.entity.vo.response.*;
 import org.example.service.TopicService;
 import org.example.service.WeatherService;
@@ -87,5 +89,23 @@ public class ForumController {
     @GetMapping("list-collect")
     public RestBean<List<TopicPreviewVO>>  listCollect(@RequestAttribute("id") int id) {
         return RestBean.success(topicService.listTopicCollection(id));
+    }
+
+    @PostMapping("/update-topic")
+    public RestBean<Void> updateTopic(@Valid @RequestBody TopicUpdateVO vo,
+                                      @RequestAttribute("id") int id){
+        return util.messageHander(() ->topicService.updateTopic(id,vo));
+    }
+
+    @PostMapping("/add-comment")
+    public RestBean<Void> addComment(@Valid @RequestBody AddCommentVO vo,
+                                     @RequestAttribute("id") int id) {
+        return util.messageHander(()-> topicService.addComment(id,vo));
+    }
+
+    @GetMapping("comments")
+    public RestBean<List<CommentVO>> comments(@RequestParam @Min(0) int tid,
+                                              @RequestParam @Min(0) int page) {
+        return RestBean.success(topicService.comments(tid, page + 1));
     }
 }

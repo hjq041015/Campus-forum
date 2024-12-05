@@ -9,9 +9,9 @@ spring:
     username: huangjiaqi041015@163.com
     password: GYeBE35YecRJHyj5
   rabbitmq:
-    addresses: 192.168.137.2
-    username: root
-    password: 123456
+    addresses: localhost
+    username: guest
+    password: guest
     virtual-host: /
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -25,9 +25,9 @@ spring:
   weather:
     key: c7df004f671d4e1fa1c7b1dfc26d4841
   minio:
-    endpoint: http://192.168.137.2:9000
-    username: minio
-    password: password
+    endpoint: http://localhost:9000
+    username: admin
+    password: admin123
 server:
   servlet:
     encoding:
