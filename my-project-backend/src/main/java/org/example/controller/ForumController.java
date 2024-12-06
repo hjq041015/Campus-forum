@@ -108,4 +108,11 @@ public class ForumController {
                                               @RequestParam @Min(0) int page) {
         return RestBean.success(topicService.comments(tid, page + 1));
     }
+
+    @GetMapping("delete-comment")
+    public RestBean<Void> deleteComments(@RequestParam @Min(0) int id,
+                                         @RequestAttribute("id") int uid){
+        topicService.deleteComment(id, uid);
+        return RestBean.success();
+    }
 }

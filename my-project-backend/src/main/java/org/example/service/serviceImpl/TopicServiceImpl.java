@@ -19,6 +19,7 @@ import org.example.entity.vo.response.TopicDetailVo;
 import org.example.entity.vo.response.TopicPreviewVO;
 import org.example.entity.vo.response.TopicTopVO;
 import org.example.mappers.*;
+import org.example.service.NotificationService;
 import org.example.service.TopicService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -60,6 +61,8 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     @Resource
     TopicCommentMapper topicCommentMapper;
 
+    @Resource
+    NotificationService notificationService;
     private static Set<Integer> types = null;
 
     // 初始化时自动执行,将所有Type的id放在一起用于检测Type是否合法
@@ -192,6 +195,21 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         comment.setUid(uid);
         comment.setTime(new Date());
         topicCommentMapper.insert(comment);
+        Topic topic = baseMapper.selectById(vo.getTid());
+        Account account = accountMapper.selectById(uid);
+        if (vo.getQuote() > 0) {
+            // 被回复的那个评论
+            TopicComment com = topicCommentMapper.selectById(vo.getQuote());
+            if (!Objects.equals(com.getUid(), account.getId())) {
+                notificationService.addNotification(com.getUid(),"您有新的帖子评论回复",
+                        account.getUsername()+" 回复了你发表的评论，快去看看吧！",
+                        "success","/index/topic-detail/"+com.getTid());
+            }
+        }else if (!Objects.equals(topic.getUid(), account.getId())) {
+            notificationService.addNotification(topic.getUid(),"您有新的帖子评论回复",
+                        account.getUsername()+" 回复了你发表的帖子，快去看看吧！",
+                        "success","/index/topic-detail/"+topic.getId());
+        }
         return null;
     }
 
@@ -203,10 +221,15 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             CommentVO vo = new CommentVO();
             BeanUtils.copyProperties(dto,vo);
             if (dto.getQuote() > 0) {
-                JSONObject object = JSONObject.parseObject(topicCommentMapper.selectOne(Wrappers.<TopicComment>query().eq("id", dto.getQuote()).orderByAsc("time")).getContent());
-                StringBuilder builder = new StringBuilder();
-                this.shortContent(object.getJSONArray("ops"),builder,ignore ->{});
-                vo.setQuote(builder.toString());
+                TopicComment comment = topicCommentMapper.selectOne(Wrappers.<TopicComment>query().eq("id", dto.getQuote()).orderByAsc("time"));
+                if (comment != null) {
+                    JSONObject object = JSONObject.parseObject(comment.getContent());
+                    StringBuilder builder = new StringBuilder();
+                    this.shortContent(object.getJSONArray("ops"),builder,ignore ->{});
+                    vo.setQuote(builder.toString());
+                }else {
+                    vo.setQuote("此评论已被删除");
+                }
             }
             CommentVO.User user = new CommentVO.User();
             this.FillUserDetailByPrivacy(user,dto.getUid());
@@ -215,6 +238,11 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         }).toList();
     }
 
+
+    @Override
+    public void deleteComment(int id, int uid) {
+        topicCommentMapper.delete(Wrappers.<TopicComment>query().eq("id",id).eq("uid",uid));
+    }
 
     @Override
     public void interact(Interact interact, Boolean state) {

@@ -144,7 +144,7 @@ const editor = ref(false)
                    <light-card  @click="router.push('/index/topic-detail/'+ item.id)" v-for="item in topic.list" class="topic-card">
                      <div style="display: flex">
                          <div>
-                                    <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"/>
+                                    <el-avatar :size="30" :src="store.avatarUserUrl(item.avatar)"/>
                          </div>
                          <div style="margin-left: 7px;transform: translateY(-2px)">
                              <div style="font-size: 13px;font-weight: bold">{{item.username}}</div>
@@ -199,7 +199,7 @@ const editor = ref(false)
                     </div>
                     <el-divider style="margin: 10px 0"/>
                     <div style="font-size: 14px; margin: 10px; color: gray">
-                        《原神》是由米哈游开发的动作角色扮演游戏，于2020年9月登陆Microsoft Windows、Android、iOS、PlayStation 4，2021年4月在PlayStation 5上线。游戏具有动漫风格的开放世界环境，采用免费游玩和内购制抽卡的游戏模式。
+                        中国共产党以马克思列宁主义、毛泽东思想、邓小平理论、“三个代表”重要思想、科学发展观、习近平新时代中国特色社会主义思想作为自己的行动指南。
                     </div>
                 </light-card>
                 <light-card style="margin-top: 10px">

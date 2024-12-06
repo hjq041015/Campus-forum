@@ -6,8 +6,12 @@ import jakarta.annotation.Resource;
 import org.example.Util.Const;
 import org.example.Util.FlowUtil;
 import org.example.entity.dto.Account;
+import org.example.entity.dto.AccountDetails;
+import org.example.entity.dto.AccountPrivacy;
 import org.example.entity.vo.request.*;
+import org.example.mappers.AccountDetailsMapper;
 import org.example.mappers.AccountMapper;
+import org.example.mappers.AccountPrivacyMapper;
 import org.example.service.AccountServer;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +44,14 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
     PasswordEncoder encoder;
 
 
-    @Autowired
+    @Resource
     private BCryptPasswordEncoder passwordEncoder;
+
+    @Resource
+    AccountPrivacyMapper accountPrivacyMapper;
+
+    @Resource
+    AccountDetailsMapper accountDetailsMapper;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -100,6 +110,10 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         Account account = new Account(null,username,password,email,"user",null,new Date());
         if (this.save(account)) {
           this.deleteVerifyEmailCode(email);
+          accountPrivacyMapper.insert(new AccountPrivacy(account.getId()));
+            AccountDetails details = new AccountDetails();
+            details.setId(account.getId());
+            accountDetailsMapper.insert(details);
             return null;
         }else {
             return "内部错误,请联系管理员";
