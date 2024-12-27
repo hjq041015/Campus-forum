@@ -5,6 +5,7 @@ import {EditPen, Lock, Message, User} from "@element-plus/icons-vue";
 import router from "@/router/index.js";
 import {ElMessage} from "element-plus";
 import {get, post} from "@/net/index.js";
+import {apiAuthAskCode, apiAuthRegister} from "@/net/api/user.js";
 
 
 const form = reactive({
@@ -63,19 +64,7 @@ const rules = {
 
 
 const validateEmail = () => {
-    coldTime.value = 60
-    get(`/api/auth/ask-code?email=${form.email}&type=register`, () => {
-        ElMessage.success(`验证码已发送到邮箱: ${form.email}，请注意查收`)
-        const handle = setInterval(() => {
-          coldTime.value--
-          if(coldTime.value === 0) {
-            clearInterval(handle)
-          }
-        }, 1000)
-    }, undefined, (message) => {
-        ElMessage.warning(message)
-        coldTime.value = 0
-    })
+    apiAuthAskCode(form.email, coldTime)
 }
 
 const isEmailValid =computed(() => {
@@ -85,9 +74,11 @@ const isEmailValid =computed(() => {
 const register = () => {
   formRef.value.validate((valid) => {
     if(valid) {
-      post('/api/auth/register',{...form},() => {
-        ElMessage.success(`注册成功欢迎加入我们`)
-        router.push('/')
+      apiAuthRegister({
+          username: form.username,
+          password: form.password,
+          email: form.email,
+          code: form.code
       })
     }else {
       ElMessage.warning(`请填写完整的注册表单内容`)

@@ -5,6 +5,7 @@ import TopicTag from "@/components/TopicTag.vue";
 import {ref} from "vue";
 import {get} from "@/net/index.js";
 import {ElMessage} from "element-plus";
+import {apiForumCollect, apiForumCollectDelete} from "@/net/api/forum.js";
 defineProps({
     show:Boolean
 })
@@ -12,11 +13,11 @@ defineProps({
 const emit = defineEmits(['close'])
 const list = ref([])
 function  init() {
-    get("api/forum/list-collect ",data => list.value = data)
+     apiForumCollect(data => list.value = data)
 }
 
 function deleteCollection(tid, index) {
-    get(`api/forum/interact?tid=${tid}&type=collect&state=false`,() => {
+    apiForumCollectDelete(tid,() => {
         ElMessage.success('取消收藏成功')
         list.value.splice(index,1)
     })

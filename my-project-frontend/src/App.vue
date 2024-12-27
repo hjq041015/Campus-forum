@@ -3,7 +3,7 @@ import 'element-plus/theme-chalk/index.css'
 import { useDark, useToggle } from '@vueuse/core'
 import {onMounted} from "vue";
 import {unauthorized} from "@/net/index.js";
-import {getUserinfo} from "@/net/api/user.js";
+import {apiUserinfo} from "@/net/api/user.js";
 import {ref,provide} from "vue";
 
 
@@ -22,7 +22,7 @@ const loading = ref(false)
 provide('userLoading',loading)
 onMounted(() => {
     if(!unauthorized()) {
-        getUserinfo(loading)
+        apiUserinfo(loading)
     }
 })
 </script>

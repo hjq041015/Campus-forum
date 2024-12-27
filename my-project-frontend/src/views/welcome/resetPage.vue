@@ -4,6 +4,7 @@ import {EditPen, Lock, Message} from "@element-plus/icons-vue";
 import {get, post} from "@/net/index.js";
 import {ElMessage} from "element-plus";
 import router from "@/router/index.js";
+import {apiAuthAskCode, apiAuthResetPassword, apiAuthRestConfirm} from "@/net/api/user.js";
 
 const coldTime =ref(0)
 const active = ref(0)
@@ -45,19 +46,7 @@ const rules = {
 
 
 const validateEmail = () => {
-    coldTime.value = 60
-    get(`/api/auth/ask-code?email=${form.email}&type=reset`, () => {
-        ElMessage.success(`验证码已发送到邮箱: ${form.email}，请注意查收`)
-        const handle = setInterval(() => {
-          coldTime.value--
-          if(coldTime.value === 0) {
-            clearInterval(handle)
-          }
-        }, 1000)
-    }, undefined, (message) => {
-        ElMessage.warning(message)
-        coldTime.value = 0
-    })
+    apiAuthAskCode(form.email,coldTime,'reset')
 }
 
 const isEmailValid =computed(() => {
@@ -67,10 +56,10 @@ const isEmailValid =computed(() => {
 const confirmReset = () => {
     formRef.value.validate((isValid) => {
         if(isValid) {
-            post('/api/auth/reset-confirm', {
+            apiAuthRestConfirm({
                 email: form.email,
                 code: form.code
-            }, () => active.value++)
+            },active)
         }
     })
 }
@@ -79,17 +68,14 @@ const confirmReset = () => {
 
 const doReset = () => {
     formRef.value.validate((isValid) => {
-        if(isValid) {
-            post('/api/auth/reset-password', {
+        if (isValid) {
+            apiAuthResetPassword({
                 email: form.email,
                 code: form.code,
                 password: form.password
-            }, () => {
-                ElMessage.success('密码重置成功，请重新登录')
-                router.push('/')
             })
-        }
-    })
+        }}
+    )
 }
 
 

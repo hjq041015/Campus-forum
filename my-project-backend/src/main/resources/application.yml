@@ -10,9 +10,21 @@ spring:
       credentials: false
       methods: '*'
   mail:
-    host: smtp.163.com
-    username: huangjiaqi041015@163.com
-    password: GYeBE35YecRJHyj5
+    host: smtp.qq.com
+    username: 2084683494@qq.com
+    password: rusznfbwvsuybdgg
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          ssl:
+            enable: true
+          socketFactory:
+            port: 465
+            class: javax.net.ssl.SSLSocketFactory
+            fallback: false
   rabbitmq:
     addresses: localhost
     username: guest

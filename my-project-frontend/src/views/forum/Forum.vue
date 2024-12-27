@@ -1,10 +1,12 @@
 <script setup>
-import {get} from "@/net/index.js";
+
 import {useStore} from "@/store/index.js";
+import {apiForumTypes} from "@/net/api/forum.js";
 
 
 const store = useStore()
-get("api/forum/types",data => {
+
+apiForumTypes(data => {
     const array = []
     array.push({name: '全部', id: 0, color: `linear-gradient(45deg, white, red, orange, gold,green,blue)`})
     data.forEach(d => array.push(d))

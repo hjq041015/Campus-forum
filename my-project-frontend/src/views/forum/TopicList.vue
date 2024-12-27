@@ -24,6 +24,7 @@ import ColorDot from "@/components/ColorDot.vue";
 import router from "@/router/index.js";
 import TopicTag from "@/components/TopicTag.vue";
 import TopicCollectionList from "@/components/TopicCollectionList.vue";
+import {apiForumTopicList, apiForumTopTopics, apiForumWeather} from "@/net/api/forum.js";
 
 
 const store = useStore()
@@ -52,15 +53,14 @@ const topic = reactive({
 
 watch(() => topic.type, () => restList(), {immediate:true})
 
-
-get("api/forum/top-topic",data => {
+apiForumTopTopics(data => {
     topic.top = data
     console.log(data)
 })
 
 function updateList() {
     if (topic.end) return
-    get(`api/forum/list-topic?page=${topic.page}&type=${topic.type}`, data => {
+    apiForumTopicList(topic.page,topic.type,data => {
         if (data) {
             data.forEach(d => topic.list.push(d))
             topic.page++
@@ -86,14 +86,14 @@ function restList() {
 navigator.geolocation.getCurrentPosition(position => {
     const longitude = position.coords.longitude
     const latitude = position.coords.latitude
-    get(`/api/forum/weather?longitude=${longitude}&latitude=${latitude}`, data => {
+    apiForumWeather(longitude,latitude,data => {
         Object.assign(weather, data)
         weather.success = true
     })
 }, error => {
     console.info(error)
     ElMessage.warning('位置信息获取超时，请检测网络设置')
-    get(`/api/forum/weather?longitude=121.3912291&latitude=31.2513263`, data => {
+    apiForumWeather(121.3912291,31.2513263,data => {
         Object.assign(weather, data)
         weather.success = true
     })
