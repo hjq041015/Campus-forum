@@ -55,6 +55,11 @@ const router = createRouter({
                 name: 'privacy-setting',
                 component:() => import('@/views/settings/PrivacySetting.vue')
             }]
+        },
+        {
+            path: '/admin',
+            name: 'admin',
+            component:() => import('@/views/AdminView.vue')
         }
     ]
 })

@@ -4,6 +4,7 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.example.Util.Const;
 import org.example.Util.JwtUtils;
 import org.example.entity.RestBean;
 import org.example.entity.dto.Account;
@@ -42,7 +43,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(conf ->{
                     conf.requestMatchers("/api/auth/**","/error").permitAll()
                             .requestMatchers("/images/**").permitAll()
-                            .anyRequest().authenticated();
+                            .anyRequest().hasAnyRole(Const.ROLE_DEFAULT,Const.ROLE_ADMIN);
                 })
                 .formLogin(conf -> {
                     conf.loginProcessingUrl("/api/auth/login")

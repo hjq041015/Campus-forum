@@ -24,4 +24,7 @@ public class Const {
      public final static String FORUM_TOPIC_PREVIEW_CACHE = "topic:preview:";
      public final static String FORUM_TOPIC_COMMENT = "topic:comment:";
 
+     //用户角色
+    public final static String ROLE_DEFAULT = "user";
+    public final static String ROLE_ADMIN = "admin";
 }
