@@ -50,7 +50,7 @@ public interface TopicMapper extends BaseMapper<Topic> {
 
 
      @Select("""
-        select  * from db_topic_interact_collect left join db_topic on tid = db_topic.id
+        select  * from db_topic_interact_collect right join db_topic on tid = db_topic.id
         where db_topic_interact_collect.uid = #{uid}
 
 """)

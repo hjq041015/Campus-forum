@@ -108,7 +108,7 @@ const editor = ref(false)
 </script>
 
 <template>
-<div style="display:flex;gap: 20px; margin: 20px auto; max-width:900px;">
+<div style="display:flex;gap: 20px; margin: 20px auto; max-width:900px; padding: 20px">
             <div style="flex: 1">
             <light-card>
                 <div @click="editor=true"  class="create-topic">

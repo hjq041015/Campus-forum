@@ -163,7 +163,7 @@ function deleteAllNotification() {
             <el-menu-item>
               <template #title>
                 <el-icon>
-                  <notification/>
+                    <Notification/>
                 </el-icon>
                 校园活动
               </template>
